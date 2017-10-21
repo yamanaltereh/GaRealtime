@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hello Analytics - A quickstart guide for JavaScript</title>
+</head>
+<body>
+
+<button id="auth-button">Authorize</button>
+
+<h1>Hello Analytics</h1>
+
+<textarea cols="80" rows="20" id="query-output"></textarea>
+
+<script>
+
+  // Replace with your client ID from the developer console.
+  var CLIENT_ID = "{{clientId}}"
+
+  // Set authorized scope.
+  var SCOPES = ['https://www.googleapis.com/auth/analytics.readonly'];
+
+  var PROFILE_ID = {{profileId}};
+
+  function authorize(event) {
+    // Handles the authorization flow.
+    // `immediate` should be false when invoked from the button click.
+    var useImmdiate = event ? false : true;
+    var authData = {
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      immediate: useImmdiate
+    };
+
+    gapi.auth.authorize(authData, function(response) {
+      var authButton = document.getElementById('auth-button');
+      if (response.error) {
+        // authButton.hidden = false;
+      }
+      else {
+        // authButton.hidden = true;
+        queryAccounts();
+      }
+    });
+  }
+
+
+  function queryAccounts() {
+    // Load the Google Analytics client library.
+    gapi.client.load('analytics', 'v3').then(function() {
+
+      // Get a list of all Google Analytics accounts for this user
+      gapi.client.analytics.management.accounts.list().then(handleAccounts);
+    });
+  }
+
+
+  function handleAccounts(response) {
+    console.log(response.result.items);
+    // Handles the response from the accounts list method.
+    if (response.result.items && response.result.items.length) {
+      // Get the first Google Analytics account.
+      var firstAccountId = response.result.items[0].id;
+
+      // Query for properties.
+      queryProperties(firstAccountId);
+    } else {
+      console.log('No accounts found for this user.');
+    }
+  }
+
+
+  function queryProperties(accountId) {
+    // Get a list of all the properties for the account.
+    gapi.client.analytics.management.webproperties.list(
+        {'accountId': accountId})
+      .then(handleProperties)
+      .then(null, function(err) {
+        // Log any errors.
+        console.log(err);
+    });
+  }
+
+
+  function handleProperties(response) {
+    console.log(response.result.items);
+    // Handles the response from the webproperties list method.
+    if (response.result.items && response.result.items.length) {
+
+      // Get the first Google Analytics account
+      var firstAccountId = response.result.items[0].accountId;
+
+      // Get the first property ID
+      var firstPropertyId = response.result.items[0].id;
+
+      // Query for Views (Profiles).
+      queryProfiles(firstAccountId, firstPropertyId);
+    } else {
+      console.log('No properties found for this user.');
+    }
+  }
+
+
+  function queryProfiles(accountId, propertyId) {
+    // Get a list of all Views (Profiles) for the first property
+    // of the first Account.
+    gapi.client.analytics.management.profiles.list({
+        'accountId': accountId,
+        'webPropertyId': propertyId
+    })
+    .then(handleProfiles)
+    .then(null, function(err) {
+        // Log any errors.
+        console.log(err);
+    });
+  }
+
+
+  function handleProfiles(response) {
+    console.log("function handleProfiles(response) {");
+    console.log(response.result.items)
+    // Handles the response from the profiles list method.
+    if (response.result.items && response.result.items.length) {
+      // Get the first View (Profile) ID.
+      var firstProfileId = response.result.items[0].id;
+
+      // Query the Core Reporting API.
+
+      // queryCoreReportingApi(firstProfileId);
+      queryCoreReportingApi(PROFILE_ID);
+
+      // setInterval(function() {
+      //   queryCoreReportingApi(PROFILE_ID);
+      // }, 3000);
+    } else {
+      console.log('No views (profiles) found for this user.');
+    }
+  }
+
+  function queryCoreReportingApi(profileId) {
+    // Query the Core Reporting API for the number sessions for
+    // the past seven days.
+    gapi.client.analytics.data.realtime.get({
+      'ids': 'ga:' + profileId,
+      'start-date': '7daysAgo',
+      'end-date': 'today',
+      // 'metrics': 'rt:activeUsers',
+      // 'dimensions': 'rt:country'
+      'metrics': 'rt:totalEvents',
+      'dimensions': 'rt:eventCategory,rt:eventAction,rt:eventLabel'
+    })
+    .then(function(response) {
+      var formattedJson = JSON.stringify(response.result, null, 2);
+      document.getElementById('query-output').value = formattedJson;
+
+      console.log("response:");
+      console.log(response.result);
+
+      button1.innerHTML = response.result.rows[0][3]
+      button2.innerHTML = response.result.rows[1][3]
+    })
+    .then(null, function(err) {
+        // Log any errors.
+        console.log(err);
+    });
+  }
+
+  // Add an event listener to the 'auth-button'.
+  document.getElementById('auth-button').addEventListener('click', authorize);
+</script>
+
+<script src="https://apis.google.com/js/client.js?onload=authorize"></script>
+
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-30197294-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-30197294-2');
+</script>
+
+<br>
+
+<!-- Google Analytics -->
+<script>
+window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+ga('create', 'UA-30197294-2', 'auto');
+ga('send', 'pageview');
+</script>
+
+<script async src='https://www.google-analytics.com/analytics.js'></script>
+<!-- End Google Analytics -->
+
+<!-- Cloud tags -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.0/jquery.min.js"></script>
+<script src="./js/jquery.awesomeCloud-0.2.js"></script>
+
+<div id="wordcloud2" class="wordcloud">
+  <span data-weight="9">quisqu</span>
+  <span data-weight="27">egesta</span>
+  <span data-weight="27">egesta</span>
+  <span data-weight="27">egesta</span>
+  <span data-weight="217">ASDASD</span>
+  <span data-weight="7">egesta</span>
+  <span data-weight="227">egesta</span>
+  <span data-weight="127">egesta</span>
+</div>
+
+<script>
+  $(document).ready(function(){
+    // $("#wordcloud1").awesomeCloud({
+    //   "size" : {
+    //     "grid" : 16,
+    //     "normalize" : false
+    //   },
+    //   "options" : {
+    //     "color" : "random-dark",
+    //     "rotationRatio" : 0.35,
+    //     "printMultiplier" : 3,
+    //     "sort" : "random"
+    //   },
+    //   "font" : "'Times New Roman', Times, serif",
+    //   "shape" : "square"
+    // });
+    $("#wordcloud2").awesomeCloud({
+      "size" : {
+        "grid" : 9,
+        "factor" : 1
+      },
+      "options" : {
+        "color" : "random-dark",
+        "rotationRatio" : 0.35
+      },
+      "font" : "'Times New Roman', Times, serif",
+      "shape" : "circle"
+    });
+    // $("#wordcloud3").awesomeCloud({
+    //   "size" : {
+    //     "grid" : 1,
+    //     "factor" : 3
+    //   },
+    //   "color" : {
+    //     "background" : "#036"
+    //   },
+    //   "options" : {
+    //     "color" : "random-light",
+    //     "rotationRatio" : 0.5,
+    //     "printMultiplier" : 3
+    //   },
+    //   "font" : "'Times New Roman', Times, serif",
+    //   "shape" : "star"
+    // });
+  });
+</script>
+<!-- END -->
+
+<!-- odometer plugin -->
+<link rel="stylesheet" href="./css/odometer-theme-car.css" />
+<script src="./js/odometer.min.js"></script>
+
+<button onclick="console.log('button 1'); ga('send', { hitType: 'event', eventCategory: 'HomePage', eventAction: 'Submit 1', eventLabel: 'First button'});">First Button</button>
+<div id="button1" class="odometer">0</div>
+
+<button onclick="console.log('button 2'); ga('send', { hitType: 'event', eventCategory: 'HomePage', eventAction: 'Submit 2', eventLabel: 'Second button'});">Second Button</button>
+<div id="button2" class="odometer">0</div>
+<!-- End -->
+
+<br><br><br><br>
+
+</body>
+</html>
+
